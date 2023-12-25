@@ -125,7 +125,7 @@ plt.show()
 # 4. High demand for petrol cars, after diesel cars 
 # 5. Maurti Suzuki cars were bought more than the other brand cars
 
-#BIVARIATE ANALYSIS
+#Step 8: BIVARIATE ANALYSIS
 # 1. Numerical vs Numerical
 plt.figure(figsize=(10,8))
 sns.heatmap(df[num_cols].corr(), annot=True,fmt='.2f')
