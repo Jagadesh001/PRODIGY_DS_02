@@ -1,14 +1,15 @@
-#Importing the necessary packages
+##Step 1:Importing the necessary packages
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 %matplotlib inline
 
-#Reading the dataset
+#Step 2:Reading the dataset
 df = pd.read_csv('car_price.csv',index_col=0)
 df.head(10)
 
+#Step 3:Analyzing the data 
 #dimensions of the shape
 df.shape
 
@@ -21,20 +22,20 @@ df.info()
 #Check the number of null values in the dataset
 df.isna().sum()
 
-#Enables us to display all rowns and columns of the data
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-
 #Handling duplicate values
 dup = df.duplicated()
 df.drop_duplicates(inplace=True)
 
-#Here we are deleting the rows that contain 0th owner, as those cars are new, and we are dealing with prices of old cars
-#Converting the rows that contain 0th owner of ownership into null values
+#Check for null values
+df.isna().sum()
+
+#Step 4: Data Reduction
 df.loc[df['ownership']=='0th Owner',df.columns]= np.nan
+df.loc[df['engine']==0,'engine']=np.nan
 df = df.dropna(axis=0)
 
-#Functions valid,brand and space_only are created to split the data under the column and also convert those with object datatype into integer/float datatypes
+#Step 5: Data Manipulation
+#Functions to manipulate the data
 def valid(data):
     data = data.split(' ')
     data = data[0]
@@ -51,12 +52,10 @@ def space_only(data):
     data = data.replace(',','')
     return float(data)
 
-#Applying the above functions to the respective columns and changing their datatypes
-#valid
+
 df['engine'] = df['engine'].apply(valid)
 df.engine = df.engine.astype(int)
 
-#space_only
 df['car_prices_in_rupee'] = df['car_prices_in_rupee'].apply(space_only)
 df['kms_driven'] = df['kms_driven'].apply(space_only)
 df['car_prices_in_rupee'] = df['car_prices_in_rupee'].astype(float)
@@ -64,43 +63,30 @@ df['kms_driven'] = df['kms_driven'].astype('int')
 df['manufacture'] = df['manufacture'].astype('int')
 df.Seats = df.Seats.astype('category')
 
-#Here in car_prices_in rupee some values are not in terms of lakhs, so we divide the values greater than 100 by a lakh
+#Renaming few columns
+col = {'car_prices_in_rupee':'car_price_in_lakhs','engine':'engine_in_cc'}
+df.rename(columns=col,inplace=True)
+
 df.loc[df.car_prices_in_rupee>100,'car_prices_in_rupee'] = df.car_prices_in_rupee/100000
 
-#On observing the engine column we find the rows that have 0 cc, which is not possible in cars, so those rows are also to be deleted
-df.loc[df['engine']==0,'engine']=np.nan
-df= df.dropna(axis=0)
-
-#Creating new columns like car_brand and Age_of_car, to make the data more informative
+#Step 6: Creating new features
 df['car_brand'] = df['car_name'].apply(brand)
 df['Age_of_car'] = 2023 - df['manufacture']
 
-#In car_brand, some of the values like Land, Mini and Maruti are incomplete
-#Hence we are renaming the respective values
 df.loc[df['car_brand']=='Land','car_brand'] = 'Land Rover'
 df.loc[df['car_brand']=='Mini','car_brand'] = 'Mini Cooper'
 df.loc[df['car_brand']=='Maruti','car_brand'] = 'Maruti Suzuki'
 
-#Also renaming a few columns 
-col = {'car_prices_in_rupee':'car_price_in_lakhs','engine':'engine_in_cc'}
-df.rename(columns=col,inplace=True)
-
 #Statistical Description of the dataset
 df.describe()
-#Analysis so far
-# 1. Total number of car details is 5412
-# 2. Values like mean, std and iqr vary from one column to another
 
-#UNIVARIATE ANALYSIS
+#Step 7:UNIVARIATE ANALYSIS
 #Categorical Analysis
-# Define the list of categorical columns to analyze
 cat_cols = ['fuel_type', 'transmission','ownership','Seats']
 
-# Create subplots
 fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(12, 32))
 axs = axs.ravel()  
 
-# Loop through each categorical column
 for i, col in enumerate(cat_cols):
     sns.countplot(x=df[col], data=df, palette='bright', ax=axs[i], saturation=0.95)
     for cont in axs[i].containers:
@@ -108,12 +94,10 @@ for i, col in enumerate(cat_cols):
     axs[i].set_title(f'Count Plot of {col.capitalize()}')
     axs[i].set_xlabel(col.capitalize())
     axs[i].set_ylabel('Count')
-    
-# Adjust layout and show plots
+
 plt.tight_layout()
 plt.show()
 
-#Due to excessive amount of brands in car_brand, it is visualized seperately
 fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(12, 8))
 sns.countplot(x=df['car_brand'], data=df, palette='bright',ax=axes)
 for container in axes.containers:
@@ -143,13 +127,12 @@ plt.show()
 
 #BIVARIATE ANALYSIS
 # 1. Numerical vs Numerical
-#Creating a correlation heatmap with numerical columns
 plt.figure(figsize=(10,8))
 sns.heatmap(df[num_cols].corr(), annot=True,fmt='.2f')
 
 
 # 2. Categorical vs Numercial
-#categorical columns vs price
+#Categorical vs Price
 plt.figure(figsize=(12, 32))
 for feature in cat_cols:
     plt.subplot(4,1, cat_cols.index(feature) + 1)
